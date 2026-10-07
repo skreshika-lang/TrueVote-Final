@@ -1,0 +1,50 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Register - TrueVote</title>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>body{font-family:Arial;background:#f5f7fb;display:flex;justify-content:center;padding:20px}
+.card{background:#fff;max-width:450px;width:100%;padding:25px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.1)}
+input{width:100%;padding:11px;margin-top:10px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+button{width:100%;padding:12px;margin-top:12px;background:#0d6efd;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer}
+video{width:100%;border-radius:10px;background:#000;margin-top:10px;transform:scaleX(-1)}
+#msg{text-align:center;margin-top:10px;color:red} canvas{display:none}</style>
+</head><body><div class="card">
+<h2 style="text-align:center">Voter Registration</h2>
+<input id="name" placeholder="Full Name"><input id="aadhar" placeholder="Aadhaar Number" maxlength="12">
+<input id="voterId" placeholder="Voter ID"><input id="mobile" placeholder="Phone Number" maxlength="10">
+<video id="video" autoplay muted playsinline></video><canvas id="canvas"></canvas>
+<button id="start">Start Camera</button><button id="capture" style="display:none;background:#28a745">Capture Photo</button>
+<button id="register" style="display:none;background:#000">Register</button>
+<div id="msg"></div><a href="index.html" style="display:block;text-align:center;margin-top:10px">Already Registered? Login</a>
+</div>
+<script>
+const video=document.getElementById('video'), msg=document.getElementById('msg');
+let faceData=null, faceDescriptor=null, currentDesc=null;
+(async()=>{
+  const M='https://justadudewhohacks.github.io/face-api.js/models';
+  await faceapi.nets.tinyFaceDetector.loadFromUri(M); await faceapi.nets.faceLandmark68Net.loadFromUri(M);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(M); await faceapi.nets.ssdMobilenetv1.loadFromUri(M);
+})();
+document.getElementById('start').onclick=async()=>{
+  video.srcObject=await navigator.mediaDevices.getUserMedia({video:true});
+  document.getElementById('capture').style.display='block'; msg.textContent="Adjust face and capture";
+  setInterval(async()=>{
+    const d=await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+    if(d) currentDesc=d.descriptor;
+  },500);
+};
+document.getElementById('capture').onclick=()=>{
+  if(!currentDesc) return alert("Face not detected! Come closer");
+  const c=document.getElementById('canvas'); c.width=video.videoWidth; c.height=video.videoHeight;
+  c.getContext('2d').drawImage(video,0,0); faceData=c.toDataURL('image/jpeg',0.8);
+  faceDescriptor=Array.from(currentDesc); msg.style.color='green'; msg.textContent="✅ Photo Captured!";
+  document.getElementById('register').style.display='block';
+};
+document.getElementById('register').onclick=async()=>{
+  const name=document.getElementById('name').value.trim(), aadharNumber=document.getElementById('aadhar').value.trim();
+  const voterId=document.getElementById('voterId').value.trim(), mobileNumber=document.getElementById('mobile').value.trim();
+  if(!name||!aadharNumber||!voterId||!mobileNumber||!faceData) return msg.textContent="Fill all + Capture Photo";
+  msg.textContent="Registering...";
+  const res=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,aadharNumber,mobileNumber,voterId,faceData,faceDescriptor})});
+  const data=await res.json(); msg.textContent=data.message;
+  if(res.ok){ alert("Registered! Wait for approval"); location.href='index.html'; } else alert(data.message);
+};
+</script></body></html>

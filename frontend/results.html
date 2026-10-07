@@ -1,0 +1,20 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Results - TrueVote</title>
+<style>body{font-family:Arial;background:#f0f4ff;display:flex;justify-content:center;padding:20px}.card{background:#fff;padding:25px;border-radius:12px;max-width:600px;width:100%;box-shadow:0 4px 15px rgba(0,0,0,.1)}h2{text-align:center}.result{padding:15px;border:2px solid #eee;border-radius:10px;margin:10px 0;display:flex;justify-content:space-between;font-weight:bold;font-size:18px}.winner{background:#d4edda;border-color:#28a745}</style>
+</head><body><div class="card">
+<h2>🗳️ Live Election Results</h2>
+<div id="results"></div><div id="total" style="text-align:center;margin-top:15px;font-weight:bold"></div>
+<button onclick="load()" style="width:100%;padding:10px;background:#0d6efd;color:#fff;border:none;border-radius:6px;margin-top:15px">Refresh Results</button>
+<a href="index.html" style="display:block;text-align:center;margin-top:10px">Back to Login</a>
+</div>
+<script>
+async function load(){
+  const res=await fetch('/api/results'); const data=await res.json();
+  const div=document.getElementById('results'); div.innerHTML='';
+  for(let party in data.counts){
+    const d=document.createElement('div'); d.className='result'; d.innerHTML=`<span>${party}</span><span>${data.counts[party]} Votes</span>`; div.appendChild(d);
+  }
+  if(Object.keys(data.counts).length===0) div.innerHTML='<p style=text-align:center>No votes yet</p>';
+  document.getElementById('total').textContent=`Total Voted: ${data.totalVoted}`;
+}
+load();
+</script></body></html>

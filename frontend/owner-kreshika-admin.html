@@ -1,0 +1,28 @@
+
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Owner Admin - Approve</title>
+<style>body{font-family:Arial;background:#f0f4ff;padding:20px}.card{background:#fff;padding:20px;border-radius:12px;max-width:900px;margin:auto;box-shadow:0 4px 15px rgba(0,0,0,.1)}table{width:100%;border-collapse:collapse;margin-top:15px}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}th{background:#0d6efd;color:#fff}button{padding:6px 12px;border:none;border-radius:5px;cursor:pointer;font-weight:bold}.approve{background:#28a745;color:#fff}.delete{background:#dc3545;color:#fff}img{width:60px;height:60px;border-radius:50%;object-fit:cover}</style>
+</head><body><div class="card">
+<h2>👑 Owner Dashboard - Kreshika</h2><p>Owner: skreshika@gmail.com | Click Refresh to see pending</p>
+<button onclick="loadUsers()" style="background:#0d6efd;color:#fff;padding:10px 15px;border-radius:6px">🔄 Load Pending Approvals</button>
+<a href="index.html" style="float:right">Logout</a>
+<div id="status" style="margin-top:10px;font-weight:bold;color:#0d6efd"></div>
+<table><thead><tr><th>Photo</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Voter ID</th><th>Status</th><th>Action</th></tr></thead><tbody id="tbody"><tr><td colspan=7 style="text-align:center">Click Load Pending Approvals</td></tr></tbody></table>
+</div>
+<script>
+async function loadUsers(){
+  const status=document.getElementById('status'); status.textContent="Loading...";
+  try{
+    const res=await fetch('/api/users'); const users=await res.json(); console.log(users);
+    const tbody=document.getElementById('tbody'); tbody.innerHTML='';
+    if(users.length===0){ tbody.innerHTML='<tr><td colspan=7 style=text-align:center>No registrations</td></tr>'; status.textContent="No users found"; return; }
+    status.textContent=`Found ${users.length} voters`;
+    users.forEach(u=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><img src="${u.faceData}" onerror="this.src='https://via.placeholder.com/60'"></td><td>${u.name}</td><td>${u.aadharNumber}</td><td>${u.mobileNumber}</td><td>${u.voterId}</td><td>${u.isApproved?'✅ Approved':''} ${u.hasVoted?'🗳️ Voted - Blocked':!u.isApproved?'⏳ Pending':''}</td><td>${!u.isApproved?`<button class=approve onclick="approve('${u._id}')">Approve</button>`:''} <button class=delete onclick="del('${u._id}')">Delete</button></td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ document.getElementById('status').textContent="Error: "+e.message+" - Use http://localhost:10000/owner-kreshika-admin.html"; alert("Open via http://localhost:10000/owner-kreshika-admin.html"); }
+}
+async function approve(id){ await fetch('/api/approve/'+id,{method:'POST'}); alert('Approved! Now voter can login'); loadUsers(); }
+async function del(id){ if(!confirm('Delete this voter?')) return; await fetch('/api/users/'+id,{method:'DELETE'}); loadUsers(); }
+</script></body></html>

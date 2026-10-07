@@ -1,0 +1,22 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>TrueVote Login</title>
+<style>body{font-family:Arial;background:#f5f7fb;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}.card{background:#fff;width:100%;max-width:400px;padding:30px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.1)}input{width:100%;padding:12px;margin-top:12px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}button{width:100%;padding:12px;margin-top:15px;background:#0d6efd;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer;font-size:16px}#msg{text-align:center;color:red;margin-top:12px;min-height:20px}</style>
+</head><body><div class="card"><h2 style="text-align:center">TrueVote Login</h2><p style="text-align:center;color:#666;font-size:13px">One Person One Vote - Powered by Kreshika</p>
+<input id="aadhar" placeholder="Aadhaar (Owner: skreshika@gmail.com)"><input id="voterId" placeholder="Voter ID (Owner: Kreshika@123)">
+<button id="loginBtn">Login to Vote</button><div id="msg"></div><a href="register.html" style="display:block;text-align:center;margin-top:15px">New Voter? Register Here</a></div>
+<script>
+async function doLogin(){
+  const aadharNumber=document.getElementById('aadhar').value.trim(), voterId=document.getElementById('voterId').value.trim();
+  const msg=document.getElementById('msg');
+  if(!aadharNumber||!voterId){ msg.textContent="Enter both"; return; }
+  msg.textContent="Checking...";
+  try{
+    const res=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({aadharNumber,voterId})});
+    const data=await res.json(); msg.textContent=data.message;
+    if(!res.ok){ alert(data.message); return; }
+    localStorage.setItem('user',JSON.stringify(data.user));
+    if(data.user.role==='admin') location.href='owner-kreshika-admin.html'; else location.href='vote.html';
+  }catch(e){ msg.textContent="Server not connected! Open http://localhost:10000/index.html and run npm start"; alert("Use http://localhost:10000/index.html not file://"); }
+}
+document.getElementById('loginBtn').addEventListener('click',doLogin);
+document.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+</script></body></html>
