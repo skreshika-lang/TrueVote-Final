@@ -41,12 +41,18 @@ app.post('/api/auth/login', async (req,res)=>{
 });
 
 app.post('/api/vote', async (req,res)=>{
-  const {userId,candidate}=req.body; const user=await User.findById(userId);
-  if(!user) return res.status(400).json({message:'Not found'});
-  if(user.hasVoted) return res.status(400).json({message:'Already Voted!'});
-  user.hasVoted=true; user.votedFor=candidate; user.votedAt=new Date(); await user.save();
-  res.json({message:`Vote for ${candidate} recorded!`});
-});
+  try{
+    const { aadharNumber, votedFor } = req.body;
+    const user = await User.findOne({ aadharNumber });
+    if(!user) return res.status(404).json({message:"Not found - User missing, please Register again"});
+    if(user.hasVoted) return res.status(400).json({message:"You already voted!"});
+    user.hasVoted = true;
+    user.votedFor = votedFor;
+    user.votedAt = new Date();
+    await user.save();
+    res.json({message:`Vote for ${votedFor} recorded!`});
+  }catch(e){ res.status(500).json({message:e.message}) }
+})
 
 app.get('/api/results', async (req,res)=>{
   const users=await User.find({hasVoted:true});

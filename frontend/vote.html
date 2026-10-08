@@ -1,80 +1,68 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vote - Face Liveness</title>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Vote - TrueVote</title>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<style>body{font-family:Arial;background:#f0f4ff;display:flex;justify-content:center;padding:15px}
+<style>
+body{font-family:Arial;background:#f5f7fb;display:flex;justify-content:center;padding:15px}
 .card{background:#fff;max-width:500px;width:100%;padding:20px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.1);text-align:center}
-video{width:100%;border-radius:12px;background:#000;transform:scaleX(-1)}
-#instruction{font-size:18px;font-weight:bold;color:#0d6efd;margin:10px 0;min-height:24px}
-#sub{color:#666;font-size:13px}
-.candidate{border:2px solid #eee;padding:12px;margin:10px 0;border-radius:10px;display:flex;justify-content:space-between}
-button{padding:10px 18px;background:#0d6efd;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer}
-#blinkStatus{font-weight:bold;margin:5px}</style>
-</head><body><div class="card">
-<h2>🔐 Face Liveness Check</h2><p>Hi <b id="name"></b>, verify to vote</p>
+video{width:100%;border-radius:10px;background:#000;transform:scaleX(-1)}
+button{width:100%;padding:14px;margin-top:12px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:16px}
+#startBtn{background:#0d6efd;color:#fff}
+.candidate{padding:12px;margin-top:10px;background:#f1f1f1;border-radius:8px;cursor:pointer;border:2px solid transparent}
+.candidate:hover{border-color:#0d6efd;background:#e8f0fe}
+#status{margin-top:10px;color:#0d6efd;font-weight:bold}
+</style></head><body>
+<div class="card">
+<h2>🔒 Face Liveness Check</h2>
+<p>Hi <span id="userName"></span>, verify to vote</p>
 <video id="video" autoplay muted playsinline></video>
-<div id="instruction">Loading AI...</div><div id="sub"></div><div id="blinkStatus">Blinks: 0 / 2</div>
-<button id="startBtn" style="width:100%;background:#28a745;margin-top:10px">Start Verification</button>
-<div id="candidates" style="display:none">
-<div class="candidate"><span>🔶 BJP</span><button onclick="vote('BJP')">Vote</button></div>
-<div class="candidate"><span>✋ Congress</span><button onclick="vote('Congress')">Vote</button></div>
-<div class="candidate"><span>🧹 AAP</span><button onclick="vote('AAP')">Vote</button></div>
-</div><p id="msg"></p></div>
+<div id="status">Loading AI Models... Please wait 5 sec</div>
+<div>Blinks: <span id="blinkCount">0 / 2</span></div>
+<button id="startBtn">▶️ Click Start Verification</button>
+<div id="voteArea" style="display:none;margin-top:15px">
+<h3>Select Party to Vote</h3>
+<div class="candidate" onclick="vote('BJP')">🪷 BJP</div>
+<div class="candidate" onclick="vote('Congress')">✋ Congress</div>
+<div class="candidate" onclick="vote('AAP')">🧹 AAP</div>
+<div class="candidate" onclick="vote('NOTA')">NOTA</div>
+</div>
+</div>
 <script>
-const user=JSON.parse(localStorage.getItem('user')); if(!user) location.href='index.html';
-document.getElementById('name').textContent=user.name;
-const video=document.getElementById('video'), ins=document.getElementById('instruction'), sub=document.getElementById('sub'), blinkStatus=document.getElementById('blinkStatus');
-let blinkCount=0, eyeClosed=false, step=0, verified=false;
+const video=document.getElementById('video'), status=document.getElementById('status'), blinkCount=document.getElementById('blinkCount');
+let blink=0, verified=false, isClose=false;
+const user=JSON.parse(localStorage.getItem('user')||'{}');
+document.getElementById('userName').textContent=user.name||'voter';
 (async()=>{
   const M='https://justadudewhohacks.github.io/face-api.js/models';
-  await faceapi.nets.tinyFaceDetector.loadFromUri(M); await faceapi.nets.faceLandmark68Net.loadFromUri(M);
-  await faceapi.nets.faceRecognitionNet.loadFromUri(M); await faceapi.nets.ssdMobilenetv1.loadFromUri(M);
-  ins.textContent="AI Ready! Click Start Verification";
+  await faceapi.nets.tinyFaceDetector.loadFromUri(M);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(M);
+  await faceapi.nets.ssdMobilenetv1.loadFromUri(M);
+  status.textContent='✅ AI Ready! Click Start Verification';
 })();
 document.getElementById('startBtn').onclick=async()=>{
   video.srcObject=await navigator.mediaDevices.getUserMedia({video:true});
-  document.getElementById('startBtn').style.display='none'; run();
-};
-async function run(){
-  const detection=await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-  if(!detection){ ins.textContent="No face detected! Come in front of camera"; sub.textContent="Adjust light"; requestAnimationFrame(run); return; }
-
-  const box=detection.detection.box; const faceWidth=box.width;
-  // Step wise instructions
-  if(step===0){
-    if(faceWidth<120){ ins.textContent="Come forward, my friend! Come close"; sub.textContent="Move a little closer to camera"; }
-    else if(faceWidth>220){ ins.textContent="Go back a little, my friend!"; sub.textContent="Move back slightly"; }
-    else { ins.textContent="Perfect! Now stay still..."; sub.textContent="Good distance"; step=1; }
-  }
-
-  if(step>=1){
-    const leftEye=detection.landmarks.getLeftEye(); const d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-    const ear=(d(leftEye[1],leftEye[5])+d(leftEye[2],leftEye[4]))/(2*d(leftEye[0],leftEye[3]));
-    if(ear<0.22 &&!eyeClosed){ eyeClosed=true; }
-    if(ear>0.26 && eyeClosed){ eyeClosed=false; blinkCount++; blinkStatus.textContent=`Blinks: ${blinkCount} / 2`;
-      if(blinkCount===1){ ins.textContent="Okay one time it's done, my friend!"; sub.textContent="One blink verified ✅ Now blink once more"; }
-      else if(blinkCount>=2){ ins.textContent="Two blinks done! Checking face..."; sub.textContent="Verifying same person as registration"; step=2; }
+  status.textContent='Come Close My Friend';
+  document.getElementById('startBtn').style.display='none';
+  setInterval(async()=>{
+    if(verified) return;
+    const det=await faceapi.detectSingleFace(video,new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+    if(!det) return;
+    const box=det.detection.box;
+    const boxPer=(box.width*box.height)/(video.videoWidth*video.videoHeight)*100;
+    const leftEye=det.landmarks.getLeftEye(), rightEye=det.landmarks.getRightEye();
+    const ear=(dist(leftEye[1],leftEye[5])+dist(leftEye[2],leftEye[4]))/(2*dist(leftEye[0],leftEye[3]));
+    if(boxPer>12) { if(!isClose){status.textContent='Go Back Slightly';} isClose=true; }
+    if(boxPer<5 && isClose){ status.textContent='Come Close My Friend'; isClose=false; }
+    if(ear<0.25 && isClose){
+      blink++; blinkCount.textContent=blink+' / 2';
+      status.textContent= blink==1?'One Done, Blink Twice!':'Liveness Passed!';
+      await new Promise(r=>setTimeout(r,1000));
+      if(blink>=2){ verified=true; status.textContent='✅ Verified! You can Vote Now'; document.getElementById('voteArea').style.display='block'; }
     }
-    if(step===1 && blinkCount===0){ ins.textContent="Blink once, my friend!"; sub.textContent="Blink your eyes naturally"; }
-  }
-
-  if(step===2 && blinkCount>=2){
-    try{
-      const storedImg=await faceapi.fetchImage(user.faceData);
-      const storedDet=await faceapi.detectSingleFace(storedImg).withFaceLandmarks().withFaceDescriptor();
-      if(storedDet){
-        const dist=faceapi.euclideanDistance(detection.descriptor, storedDet.descriptor);
-        if(dist<0.55){
-          verified=true; ins.textContent="✅ Same person verified! You can vote now"; ins.style.color="green"; sub.textContent="Face matched with registered photo";
-          document.getElementById('candidates').style.display='block'; video.srcObject.getTracks().forEach(t=>t.stop()); return;
-        } else { ins.textContent=`❌ Face NOT matching! Distance ${dist.toFixed(2)}`; sub.textContent="This is not same person as registered"; ins.style.color="red"; blinkStatus.textContent="BLOCKED! Different face"; return; }
-      }
-    }catch(e){ console.log(e); }
-  }
-  if(!verified) requestAnimationFrame(run);
-}
-async function vote(candidate){
-  if(!verified) return alert("Complete face verification first!");
-  const res=await fetch('/api/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:user._id,candidate})});
-  const data=await res.json(); document.getElementById('msg').textContent=data.message;
-  if(res.ok){ alert("Vote Success!"); localStorage.clear(); location.href='index.html'; } else { alert(data.message); location.href='index.html'; }
+    if(!verified && isClose && blink==0) status.textContent='Blink Once!';
+  },300);
+};
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+async function vote(party){
+  const res=await fetch('/api/vote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({aadharNumber:user.aadharNumber,votedFor:party})});
+  const data=await res.json(); alert(data.message); if(res.ok) location.href='results.html';
 }
 </script></body></html>

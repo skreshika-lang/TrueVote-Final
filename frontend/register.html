@@ -7,7 +7,7 @@ button{width:100%;padding:12px;margin-top:12px;background:#0d6efd;color:#fff;bor
 video{width:100%;border-radius:10px;background:#000;margin-top:10px;transform:scaleX(-1)}
 #msg{text-align:center;margin-top:10px;color:red} canvas{display:none}</style>
 </head><body><div class="card">
-<h2 style="text-align:center">Voter Registration</h2>
+<h2 style="text-align:center">Voter Registration - TrueVote</h2>
 <input id="name" placeholder="Full Name"><input id="aadhar" placeholder="Aadhaar Number" maxlength="12">
 <input id="voterId" placeholder="Voter ID"><input id="mobile" placeholder="Phone Number" maxlength="10">
 <video id="video" autoplay muted playsinline></video><canvas id="canvas"></canvas>
@@ -45,6 +45,6 @@ document.getElementById('register').onclick=async()=>{
   msg.textContent="Registering...";
   const res=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,aadharNumber,mobileNumber,voterId,faceData,faceDescriptor})});
   const data=await res.json(); msg.textContent=data.message;
-  if(res.ok){ alert("Registered! Wait for approval"); location.href='index.html'; } else alert(data.message);
+  if(res.ok){ alert("Registered! You can Login now - TrueVote! No Approval Needed!"); location.href='index.html'; } else alert(data.message);
 };
 </script></body></html>
