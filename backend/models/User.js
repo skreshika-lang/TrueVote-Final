@@ -1,14 +1,17 @@
 const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   name: String,
-  aadharNumber: { type: String, unique: true },
-  mobileNumber: { type: String, unique: true },
-  voterId: { type: String, unique: true },
+  aadharNumber: {type:String, unique:true},
+  mobileNumber: String,
+  voterId: {type:String, unique:true},
   faceData: String,
-  faceDescriptor: Array,
-  isApproved: { type: Boolean, default: true },
-  hasVoted: { type: Boolean, default: false },
+  faceDescriptor: {type: Array, default: []},
+  hasVoted: {type:Boolean, default:false},
   votedFor: String,
-  votedAt: Date
-}, { timestamps: true });
+  votedAt: Date,
+  // BLOCKCHAIN FIELDS
+  previousHash: {type:String, default:"0"},
+  currentHash: String,
+  blockIndex: Number
+});
 module.exports = mongoose.model('User', userSchema);
